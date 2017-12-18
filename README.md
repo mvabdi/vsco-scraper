@@ -31,13 +31,13 @@ To scrape a VSCO:
 ```
  $ vsco-scraper <username> --getImages
 ```
-*Images are downloaded into the current directory/<username>*
+*Images are downloaded into the* `<current directory/<username>`
 
 To scrape a user's journal on VSCO:
 ```
  $ vsco-scraper <username> --getJournal
 ```
-*Journal Images are downloaded into the current directory/<username>/journal/<journalname>*
+*Journal Images are downloaded into the* `<current directory>/<username>/journal/<journalname>`
 
 To plot all images with locations to a Google Maps file:
 ```
@@ -47,11 +47,11 @@ To plot all images with locations to a Google Maps file:
 
 ## Options
 
-Option | Description
------- | -----------
---getImages or -i | Grabs all of the user's images
---getJournal or -j | Grab's all of the images in the user's journals, then seperates into seperate folders
---plot or -p | Plot's a map of the images with location coords
+Option | Second Option | Description
+------ | ------------- | -----------
+--getImages | -i | Grabs all of the user's images
+--getJournal | -j | Grab's all of the images in the user's journals, then seperates into seperate folders
+--plot | -p | Plot's a map of the images with location coords
 
 
 ## Author
