@@ -25,21 +25,6 @@ class Scraper(object):
       self.newSiteId()
       self.buildJSON()
 
-     
-    def getSiteId(self):
-        base = "https://vsco.co/"
-        r = requests.get(base + self.username)
-        page = bs(r.text,"html.parser")
-        metas = page.find_all("meta")
-        caught = [one for one in metas if one.get("property") == "al:android:url"]
-        for x in caught:
-            to_parse = x.get("content")
-        first = to_parse[12:]   
-        backfound = first.rfind("/")
-        neg = len(first)-backfound
-        self.siteid = first[:-neg]
-        return self.siteid
-
     def newSiteId(self):
         base = "http://vsco.co/"
         res = self.session.get("http://vsco.co/ajxp/%s/2.0/sites?subdomain=%s" % (self.uid,self.username))
