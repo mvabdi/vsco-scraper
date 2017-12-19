@@ -1,10 +1,10 @@
 # VSCO Scrape
 
-Allows for easy scraping of one VSCO at a time + plotting location data of images
+Allows for easy scraping of one VSCO at a time
 
 ## Getting Started
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
+Usage and installation of vsco-scraper
 
 ### Prerequisites
 
@@ -39,19 +39,14 @@ To scrape a user's journal on VSCO:
 ```
 *Journal Images are downloaded into the* `<current directory>/<username>/journal/<journalname>`
 
-To plot all images with locations to a Google Maps file:
-```
- $ vsco-scraper <username> --plot
-```
-*Google maps HTML with plotted coordinates*
+
 
 ## Options
 
-Option | Second Option | Description
+Option | Secondary Options | Description
 ------ | ------------- | -----------
 --getImages | -i | Grabs all of the user's images
 --getJournal | -j | Grab's all of the images in the user's journals, then seperates into seperate folders
---plot | -p | Plot's a map of the images with location coords
 
 
 ## Author

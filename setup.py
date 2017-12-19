@@ -11,8 +11,6 @@ setup(
     install_requires=[
         'tqdm>=4.19.4',
         'requests>=2.18.4',
-        'geocoder>=1.33.0',
-        'gmplot>=1.2.0',
         'beautifulsoup4',
     ],
     entry_points='''
