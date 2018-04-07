@@ -25,6 +25,21 @@ class Scraper(object):
       self.newSiteId()
       self.buildJSON()
 
+     
+    def getSiteId(self):
+        base = "https://vsco.co/"
+        r = requests.get(base + self.username)
+        page = bs(r.text,"html.parser")
+        metas = page.find_all("meta")
+        caught = [one for one in metas if one.get("property") == "al:android:url"]
+        for x in caught:
+            to_parse = x.get("content")
+        first = to_parse[12:]   
+        backfound = first.rfind("/")
+        neg = len(first)-backfound
+        self.siteid = first[:-neg]
+        return self.siteid
+
     def newSiteId(self):
         base = "http://vsco.co/"
         res = self.session.get("http://vsco.co/ajxp/%s/2.0/sites?subdomain=%s" % (self.uid,self.username))
@@ -47,78 +62,56 @@ class Scraper(object):
         r = self.session.get(self.mediaurl,headers=constants.media,params = {"page":"%s"%page})
         videos = []
         images = []
+        totality = []
         videx = 0
         total = 0
         count = len(r.json()["media"])
         page = 1
         while count > 0:
             r = self.session.get(self.mediaurl,headers=constants.media,params = {"page":"%s"%page})
+            for vid in r.json()["media"]:
+                if vid['is_video'] is True:
+                    if '%s.mp4' % str(vid["upload_date"])[:-3] in os.listdir():
+                        videx +=1
+                        continue
+                    videx +=1
+                    vid_indiv = "http://%s"% vid["video_url"]
+                    #videos.append(vid_indiv)
+                    totality.append([vid_indiv,True,vid["upload_date"]])
+                if vid['is_video'] is False:
+                    if '%s.jpg' % str(vid["upload_date"])[:-3] in os.listdir():
+                        videx +=1
+                        continue
+                    videx += 1
+                    img_indiv = "http://%s"% vid["responsive_url"]
+                   # images.append(img_indiv)
+                    totality.append([img_indiv,False,vid["upload_date"]])
             page+=1                 
             count = len(r.json()["media"])
             total += count
         r = self.session.get(self.mediaurl,headers=constants.media,params = {"size":"%s"%total})
         red = r.json()["media"]
-        for vid in tqdm(red,total=total):
-            if vid['is_video'] is True:
-                if '%s.mp4' % str(vid["upload_date"])[:-3] in os.listdir():
-                    videx +=1
-                    continue
-                videx +=1
-                vid_indiv = "http://%s"% vid["video_url"]
-                videos.append(vid_indiv)
-                with open('%s.mp4'%str(vid["upload_date"])[:-3],'wb') as f:
-                    for chunk in requests.get(vid_indiv ,stream=True).iter_content(chunk_size=1024): 
-                        if chunk:
-                            f.write(chunk)
-            if vid['is_video'] is False:
-                if '%s.jpg' % str(vid["upload_date"])[:-3] in os.listdir():
-                    videx +=1
-                    continue
-                videx += 1
-                img_indiv = "http://%s"% vid["responsive_url"]
-                images.append(img_indiv)
-                with open('%s.jpg'%str(vid["upload_date"])[:-3],'wb') as f:
-                    f.write(requests.get(img_indiv ,stream=True).content)
-        print("Videos and Images of %s downloaded"%self.username)
+
+        
+        rm = totality[::-1]
+
+        if len(rm) > 0:
+            for vid in tqdm(rm,total=len(rm)):
+                if vid[1] == True:
+                    with open('%s.mp4'%str(vid[2])[:-3],'wb') as f:
+                        for chunk in requests.get(vid[0] ,stream=True).iter_content(chunk_size=1024): 
+                            if chunk:
+                                f.write(chunk)
+                if vid[1] == False:
+                    with open('%s.jpg'%str(vid[2])[:-3],'wb') as f:
+                        f.write(requests.get(vid[0],stream=True).content)
+            print("Videos and Images of %s downloaded"%self.username)
+        else:
+            print("No new videos or images of %s found" %self.username)
 
 
-    def plotter(self):
-        page=1
-        r = self.session.get(self.mediaurl,headers=constants.media,params = {"page":"%s"%page}) 
-        count = len(r.json()["media"])
-        coords = []
-        index = 0
-        indexs = []
-        while count > 0:
-            for loc in r.json()["media"]:
-                if loc["has_location"]:
-                    coords.append([loc["location_coords"][1],loc["location_coords"][0],datetime.datetime.fromtimestamp(int(loc["capture_date"])/1000).strftime('%Y-%m-%d %I:%M:%S %p')])
-                    index +=1
-                    indexs.append(index)
-                else:
-                    index+=1
-                    continue
-            page+=1                 
-            r = self.session.get(self.mediaurl,headers=constants.media,params = {"page":"%s"%page})
-            count = len(r.json()["media"])
-        gmap = gmplot.GoogleMapPlotter(39.106506,-77.555574,13)
-        gmap.coloricon = 'file:///' + os.path.dirname(gmplot.__file__).replace('\\', '/') + '/markers/%s.png'
-        index = 0
-        for coord in tqdm(coords,total=len(coords)):
-            index +=1
-            g = geocoder.google([coord[0],coord[1]],method='reverse').address
-            crindex = 0
-            while g is None:
-                g = geocoder.google([coord[0],coord[1]],method='reverse').address
-                crindex +=1
-                if crindex == 10:
-                    break
-                else:
-                    time.sleep(.3)
-            gmap.marker(coord[0],coord[1], '#3B0B39','#E0FFFF', title="%s at %s" %(g,coord[2]))
-            time.sleep(.15)
-        gmap.draw("markers.html")
-        return gmap        
+
+    
     def getJournal(self):
         page = 1
         r = self.session.get(self.journalurl,headers=constants.media,params = {"page":"%s"%page})
@@ -178,22 +171,44 @@ def main():
     parser.add_argument('-p','--plot',action="store_true", help='Plots locations of pictures on the VSCO')
     parser.add_argument('-i','--getImages',action="store_true", help='Get the pictures of the user')
     parser.add_argument('-j','--getJournal',action="store_true", help='Get the Journal of the user')
+    parser.add_argument('-m','--multiple',action="store_true", help='Scrape multiple users')
     args = parser.parse_args()
 
     
-    scraper = Scraper(args.username)
+    
 
     if args.siteId:
+        scraper = Scraper(args.username)
         print(scraper.newSiteId())
 
     if args.getImages:
+        scraper = Scraper(args.username)
         scraper.getImages()
 
     if args.getJournal:
+        scraper = Scraper(args.username)
         scraper.getJournal()
 
     if args.plot:
+        scraper = Scraper(args.username)
         scraper.plotter()
+
+    if args.multiple:
+        y = []
+        vsco = os.getcwd()
+        with open(args.username,'r') as f:
+            for x in f:
+                y.append(x.replace("\n", ""))
+        for z in y:
+            try:
+                os.chdir(vsco)
+                Scraper(z).getImages()
+                print("\n")
+            except:
+                print("%s crashed" % z)
+                pass
+
+    
 
     
 

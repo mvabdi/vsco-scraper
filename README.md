@@ -38,6 +38,11 @@ To scrape a user's journal on VSCO:
  $ vsco-scraper <username> --getJournal
 ```
 *Journal Images are downloaded into the* `<current directory>/<username>/journal/<journalname>`
+To scrape multiple VSCOs:
+```
+ $ vsco-scraper <filename-of-text-file> --multiple
+```
+*The scraper will read a text file, one username per line
 
 
 
@@ -47,6 +52,7 @@ Option | Secondary Options | Description
 ------ | ------------- | -----------
 --getImages | -i | Grabs all of the user's images
 --getJournal | -j | Grab's all of the images in the user's journals, then seperates into seperate folders
+--multiple | -m | Grab's multple user's images
 
 
 ## Author
