@@ -1,15 +1,12 @@
 import argparse
 from tqdm import tqdm
 import requests
-import constants
+import vscoscrape.constants as constants
 from bs4 import BeautifulSoup as bs
 import time
 import random
 import os
-import geocoder
-import gmplot
 import datetime
-from pytz import timezone
 
 class Scraper(object):
 
@@ -168,7 +165,6 @@ def main():
     description="Scrapes a specified users VSCO, currently only supports one user at a time")
     parser.add_argument('username', help='VSCO user to scrape')
     parser.add_argument('-s','--siteId',action="store_true", help='Grabs VSCO siteID for user')
-    parser.add_argument('-p','--plot',action="store_true", help='Plots locations of pictures on the VSCO')
     parser.add_argument('-i','--getImages',action="store_true", help='Get the pictures of the user')
     parser.add_argument('-j','--getJournal',action="store_true", help='Get the Journal of the user')
     parser.add_argument('-m','--multiple',action="store_true", help='Scrape multiple users')
@@ -189,9 +185,6 @@ def main():
         scraper = Scraper(args.username)
         scraper.getJournal()
 
-    if args.plot:
-        scraper = Scraper(args.username)
-        scraper.plotter()
 
     if args.multiple:
         y = []

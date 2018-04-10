@@ -2,12 +2,12 @@ from setuptools import setup, find_packages
 
 setup(
     name="vsco-scraper",
-    version='0.33',
-    descripton='Allows for a user to scrape one VSCO user at a time',
+    version='0.36',
+    description='Allows for a user to scrape users VSCOs',
     author='Mustafa Abdi',
     author_email='mustafabyabdi@gmail.com',
     packages=find_packages(),
-    
+    url='https://github.com/mvabdi/vsco-scraper',
     install_requires=[
         'tqdm>=4.19.4',
         'requests>=2.18.4',
