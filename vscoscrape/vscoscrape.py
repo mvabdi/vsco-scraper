@@ -15,7 +15,7 @@ class Scraper(object):
       self.session = requests.Session() 
       self.session.get("http://vsco.co/content/Static/userinfo?callback=jsonp_%s_0"% (str(round(time.time()*1000))),headers=constants.visituserinfo)
       self.uid = self.session.cookies.get_dict()['vs']
-      path = "%s\%s"% (os.getcwd(),self.username)
+      path = os.path.join(os.getcwd(),self.username)
       if not os.path.exists(path):
           os.makedirs(path)
       os.chdir(path)
@@ -121,14 +121,14 @@ class Scraper(object):
             for x in r.json()["articles"]:
                 total += len(x["body"])  
             count = len(r.json()["articles"])   
-        path = "%s\journal" % (os.getcwd())
+        path = os.path.join(os.getcwd(),"journal")
         if not os.path.exists(path):
             os.makedirs(path)
         os.chdir(path)
         pbar = tqdm(total=total)
         r = self.session.get(self.journalurl,headers=constants.media,params = {"size":"%s"%total}) 
         for j in r.json()["articles"]:
-            path = "%s\%s"% (os.getcwd(),str(j["permalink"]))
+            path = os.path.join(os.getcwd(),str(j["permalink"]))
             if not os.path.exists(path):
                 os.makedirs(path)
             os.chdir(path)
