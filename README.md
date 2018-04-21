@@ -46,7 +46,6 @@ To scrape multiple VSCOs:
 *The scraper will read a text file, one username per line
 
 
-
 ## Options
 
 Option | Secondary Options | Description
@@ -54,6 +53,8 @@ Option | Secondary Options | Description
 --getImages | -i | Grabs all of the user's images
 --getJournal | -j | Grab's all of the images in the user's journals, then seperates into seperate folders
 --multiple | -m | Grab's multple user's images
+--multipleJournal | -mj | Grab's multiple user's journals
+--all | -a | Scrape multiple users journals and images, will download journal if they have one
 
 
 ## Author
