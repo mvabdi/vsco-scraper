@@ -1,12 +1,13 @@
 import requests
 from tqdm import tqdm
-import constants
+from . import constants
 import time
 import os
 from concurrent.futures import ThreadPoolExecutor
 import concurrent.futures
 import random
 import argparse
+
 
 
 
@@ -53,7 +54,7 @@ class Scraper(object):
                     try:
                         data=future.result()
                     except Exception as exc:
-                        print('%r crashed %s' % (num,exc))
+                        print('%r crashed %s' % (part,exc))
             os.chdir(os.path.normpath(os.getcwd() + os.sep + os.pardir))
         self.pbarj.close()
 
@@ -74,30 +75,46 @@ class Scraper(object):
                 try:
                     data=future.result()
                 except Exception as exc:
-                   print('%r crashed %s' % (num,exc))
+                   print('%r crashed %s' % (val,exc))
         self.pbarjlist.close()
 
     def makeListJournal(self, num, loc):
         for item in self.jour_found[loc]["body"]:
-            if os.path.exists("%s\%s"% (os.getcwd(),self.jour_found[loc]["permalink"])):
-                if '%s.jpg' % str(item["content"][0]["id"]) in os.listdir("%s\%s"% (os.getcwd(),self.jour_found[loc]["permalink"])) or '%s.mp4' % str(item["content"][0]["id"])in os.listdir("%s\%s"% (os.getcwd(),self.jour_found[loc]["permalink"])):
-                    continue
+                #if os.path.exists("%s\%s"% (os.getcwd(),self.jour_found[loc]["permalink"])):
+               #     if '%s.jpg' % str(item["content"][0]["id"]) in os.listdir("%s\%s"% (os.getcwd(),self.jour_found[loc]["permalink"])):
+               #         continue
+               #     if '%s.mp4' % str(item["content"][0]["id"])in os.listdir("%s\%s"% (os.getcwd(),self.jour_found[loc]["permalink"])):
+               #         continue
             if item['type'] == "image":
-                self.works[loc].append(["http://%s"% item["content"][0]["responsive_url"],item["content"][0]["id"],False])
-            elif img['type'] == "video":
-                self.works[loc].append(["http://%s"% item["content"][0]["video_url"],item["content"][0]["id"],True])
+                if os.path.exists("%s\%s"% (os.getcwd(),self.jour_found[loc]["permalink"])):
+                    if '%s.jpg' % str(item["content"][0]["id"]) in os.listdir("%s\%s"% (os.getcwd(),self.jour_found[loc]["permalink"])):
+                        continue
+                self.works[loc].append(["http://%s"% item["content"][0]["responsive_url"],item["content"][0]["id"],"img"])
+            elif item['type'] == "video":
+                if os.path.exists("%s\%s"% (os.getcwd(),self.jour_found[loc]["permalink"])):
+                    if '%s.mp4' % str(item["content"][0]["id"])in os.listdir("%s\%s"% (os.getcwd(),self.jour_found[loc]["permalink"])):
+                        continue
+                self.works[loc].append(["http://%s"% item["content"][0]["video_url"],item["content"][0]["id"],"vid"])
+            elif item['type'] == "text":
+                if os.path.exists("%s\%s"% (os.getcwd(),self.jour_found[loc]["permalink"])):
+                    if '%s.txt' % str(item["content"]) in os.listdir("%s\%s"% (os.getcwd(),self.jour_found[loc]["permalink"])):
+                        continue
+                self.works[loc].append([item["content"],"txt"])
             self.totalj +=1
             self.pbarjlist.update()
         return "done"
 
     def download_img_journal(self, lists):
-        if lists[2] is False:
+        if lists[1] == "txt":
+            with open("%s.txt"%str(lists[0]),'w') as f:
+                f.write(lists[0])
+        if lists[2] == "img":
             if '%s.jpg' % lists[1] in os.listdir():
                 return "done"
             with open('%s.jpg'%str(lists[1]),'wb') as f:
                 f.write(requests.get(lists[0] ,stream=True).content)
             
-        else:
+        elif lists[2] == "vid":
             if '%s.mp4' % lists[1] in os.listdir():
                 return "done"
             with open('%s.mp4'%str(lists[1]),'wb') as f:
@@ -117,14 +134,14 @@ class Scraper(object):
                 try:
                     data=future.result()
                 except Exception as exc:
-                    print('%r crashed %s' % (num,exc))
+                    print('%r crashed %s' % (liste,exc))
 
 
     def getImageList(self):
         self.pbar = tqdm(desc='Finding new posts of %s' %self.username, unit=' posts')
         with ThreadPoolExecutor(max_workers=5) as executor:
             future_to_url = {executor.submit(self.makeImageList,num): num for num in range(5)}
-            for future in tqdm(concurrent.futures.as_completed(future_to_url)):
+            for future in concurrent.futures.as_completed(future_to_url):
                 num=future_to_url[future]
                 try:
                     data=future.result()

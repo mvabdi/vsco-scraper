@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="vsco-scraper",
-    version='0.46',
+    version='0.47',
     description='Allows for a user to scrape users VSCOs',
     author='Mustafa Abdi',
     author_email='mustafabyabdi@gmail.com',
@@ -17,5 +17,5 @@ setup(
         [console_scripts]
         vsco-scraper=vscoscrape:main
     ''',
-    keywords='vsco scrape image images',
+    keywords='vsco scrape image images download',
 )
