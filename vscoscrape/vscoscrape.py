@@ -19,7 +19,7 @@ class Scraper(object):
       self.session = requests.Session() 
       self.session.get("http://vsco.co/content/Static/userinfo?callback=jsonp_%s_0"% (str(round(time.time()*1000))),headers=constants.visituserinfo)
       self.uid = self.session.cookies.get_dict()['vs']
-      path = "%s\%s"% (os.getcwd(),self.username)
+      path = "%s/%s"% (os.getcwd(),self.username)
       if not os.path.exists(path):
           os.makedirs(path)
       os.chdir(path)
@@ -42,7 +42,7 @@ class Scraper(object):
         self.getJournalList()
         self.pbarj = tqdm(total=self.totalj, desc='Downloading journal posts of %s'%self.username, unit=' posts')    
         for x in self.works:
-            path = "%s\%s"% (os.getcwd(),x[0])
+            path = "%s/%s"% (os.getcwd(),x[0])
             if not os.path.exists(path):
                 os.makedirs(path)
             os.chdir(path)
@@ -64,7 +64,7 @@ class Scraper(object):
         self.pbarjlist = tqdm(desc='Finding new journal posts of %s' %self.username, unit=' posts')
         for x in self.jour_found:
             self.works.append([x["permalink"]])
-        path = "%s\journal" % (os.getcwd())
+        path = "%s/journal" % (os.getcwd())
         if not os.path.exists(path):
             os.makedirs(path)
         os.chdir(path)
@@ -80,24 +80,24 @@ class Scraper(object):
 
     def makeListJournal(self, num, loc):
         for item in self.jour_found[loc]["body"]:
-                #if os.path.exists("%s\%s"% (os.getcwd(),self.jour_found[loc]["permalink"])):
-               #     if '%s.jpg' % str(item["content"][0]["id"]) in os.listdir("%s\%s"% (os.getcwd(),self.jour_found[loc]["permalink"])):
+                #if os.path.exists("%s/%s"% (os.getcwd(),self.jour_found[loc]["permalink"])):
+               #     if '%s.jpg' % str(item["content"][0]["id"]) in os.listdir("%s/%s"% (os.getcwd(),self.jour_found[loc]["permalink"])):
                #         continue
-               #     if '%s.mp4' % str(item["content"][0]["id"])in os.listdir("%s\%s"% (os.getcwd(),self.jour_found[loc]["permalink"])):
+               #     if '%s.mp4' % str(item["content"][0]["id"])in os.listdir("%s/%s"% (os.getcwd(),self.jour_found[loc]["permalink"])):
                #         continue
             if item['type'] == "image":
-                if os.path.exists("%s\%s"% (os.getcwd(),self.jour_found[loc]["permalink"])):
-                    if '%s.jpg' % str(item["content"][0]["id"]) in os.listdir("%s\%s"% (os.getcwd(),self.jour_found[loc]["permalink"])):
+                if os.path.exists("%s/%s"% (os.getcwd(),self.jour_found[loc]["permalink"])):
+                    if '%s.jpg' % str(item["content"][0]["id"]) in os.listdir("%s/%s"% (os.getcwd(),self.jour_found[loc]["permalink"])):
                         continue
                 self.works[loc].append(["http://%s"% item["content"][0]["responsive_url"],item["content"][0]["id"],"img"])
             elif item['type'] == "video":
-                if os.path.exists("%s\%s"% (os.getcwd(),self.jour_found[loc]["permalink"])):
-                    if '%s.mp4' % str(item["content"][0]["id"])in os.listdir("%s\%s"% (os.getcwd(),self.jour_found[loc]["permalink"])):
+                if os.path.exists("%s/%s"% (os.getcwd(),self.jour_found[loc]["permalink"])):
+                    if '%s.mp4' % str(item["content"][0]["id"])in os.listdir("%s/%s"% (os.getcwd(),self.jour_found[loc]["permalink"])):
                         continue
                 self.works[loc].append(["http://%s"% item["content"][0]["video_url"],item["content"][0]["id"],"vid"])
             elif item['type'] == "text":
-                if os.path.exists("%s\%s"% (os.getcwd(),self.jour_found[loc]["permalink"])):
-                    if '%s.txt' % str(item["content"]) in os.listdir("%s\%s"% (os.getcwd(),self.jour_found[loc]["permalink"])):
+                if os.path.exists("%s/%s"% (os.getcwd(),self.jour_found[loc]["permalink"])):
+                    if '%s.txt' % str(item["content"]) in os.listdir("%s/%s"% (os.getcwd(),self.jour_found[loc]["permalink"])):
                         continue
                 self.works[loc].append([item["content"],"txt"])
             self.totalj +=1
