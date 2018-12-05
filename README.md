@@ -1,4 +1,4 @@
-# VSCO Scrape
+# VSCO Scraper
 
 Allows for easy scraping of one VSCO at a time
 
@@ -44,6 +44,12 @@ To scrape multiple VSCOs:
  $ vsco-scraper <filename-of-text-file> --multiple
 ```
 *The scraper will read a text file, one username per line
+
+To scrape multiple VSCOs and journals:
+```
+ $ vsco-scraper <filename-of-text-file> --all
+```
+*Same as above one username per line, but will also download journals if it finds them
 
 
 ## Options
