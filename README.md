@@ -18,7 +18,7 @@ To install vsco-scraper:
  $ pip install vsco-scraper
 ```
 
-To update vsco-scraper
+To update vsco-scraper:
 
 ```
  $ pip install vsco-scraper --upgrade
