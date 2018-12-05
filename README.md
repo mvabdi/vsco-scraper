@@ -1,4 +1,4 @@
-# VSCO Scrape
+# VSCO Scraper
 
 Allows for easy scraping of one VSCO at a time
 
