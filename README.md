@@ -63,9 +63,10 @@ Option | Secondary Options | Description
 --all | -a | Scrape multiple users journals and images, will download journal if they have one
 
 
-## Author
+## Contributors
 
 * **Mustafa Abdi** - *Initial work* - [mvabdi](https://github.com/mvabdi)
+* ** sc1341 ** - *Pull Request* - [sc1341](https://github.com/sc1341)
 
 ## License
 

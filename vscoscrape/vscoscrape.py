@@ -1,25 +1,27 @@
-import requests
-from tqdm import tqdm
-from . import constants
-import time
-import os
-from concurrent.futures import ThreadPoolExecutor
-import concurrent.futures
-import random
+#!/usr/bin/env python3
 import argparse
+import concurrent.futures
+import os
+import random
+import time
+from concurrent.futures import ThreadPoolExecutor
 
+import requests
 
+from tqdm import tqdm
 
+import constants
 
 
 class Scraper(object):
 
     def __init__(self, username):
       self.username = username
-      self.session = requests.Session() 
+      self.session = requests.Session()
       self.session.get("http://vsco.co/content/Static/userinfo?callback=jsonp_%s_0"% (str(round(time.time()*1000))),headers=constants.visituserinfo)
       self.uid = self.session.cookies.get_dict()['vs']
       path = os.path.join(os.getcwd(), self.username)
+      # If the path doesn't exist, then create it
       if not os.path.exists(path):
           os.makedirs(path)
       os.chdir(path)
@@ -28,7 +30,6 @@ class Scraper(object):
       self.totalj = 0
 
     def newSiteId(self):
-        base = "http://vsco.co/"
         res = self.session.get("http://vsco.co/ajxp/%s/2.0/sites?subdomain=%s" % (self.uid,self.username))
         self.siteid = res.json()["sites"][0]["id"]
         return self.siteid
@@ -39,8 +40,12 @@ class Scraper(object):
         return self.mediaurl
 
     def getJournal(self):
+        """Downloads the journal posts from the user
+        :params: none
+        :return: none
+        """
         self.getJournalList()
-        self.pbarj = tqdm(total=self.totalj, desc='Downloading journal posts of %s'%self.username, unit=' posts')    
+        self.progbarj = tqdm(total=self.totalj, desc='Downloading journal posts of %s'%self.username, unit=' posts')    
         for x in self.works:
             path = os.path.join(os.getcwd(), x[0])
             if not os.path.exists(path):
@@ -56,7 +61,7 @@ class Scraper(object):
                     except Exception as exc:
                         print('%r crashed %s' % (part,exc))
             os.chdir(os.path.normpath(os.getcwd() + os.sep + os.pardir))
-        self.pbarj.close()
+        self.progbarj.close()
 
     def getJournalList(self):
         self.works = []
@@ -79,12 +84,11 @@ class Scraper(object):
         self.pbarjlist.close()
 
     def makeListJournal(self, num, loc):
+        """
+        Makes the list of all journal entries on the users page
+        :params: num, loc
+        """
         for item in self.jour_found[loc]["body"]:
-                #if os.path.exists(os.path.join(os.getcwd(), self.jour_found[loc]["permalink"])):
-               #     if '%s.jpg' % str(item["content"][0]["id"]) in os.listdir(os.path.join(os.getcwd(),self.jour_found[loc]["permalink"])):
-               #         continue
-               #     if '%s.mp4' % str(item["content"][0]["id"])in os.listdir(os.path.join(os.getcwd(),self.jour_found[loc]["permalink"])):
-               #         continue
             if item['type'] == "image":
                 if os.path.exists(os.path.join(os.getcwd(),self.jour_found[loc]["permalink"])):
                     if '%s.jpg' % str(item["content"][0]["id"]) in os.listdir(os.path.join(os.getcwd(),self.jour_found[loc]["permalink"])):
@@ -102,7 +106,7 @@ class Scraper(object):
                 self.works[loc].append([item["content"],"txt"])
             self.totalj +=1
             self.pbarjlist.update()
-        return "done"
+        return True
 
     def download_img_journal(self, lists):
         if lists[1] == "txt":
@@ -110,19 +114,19 @@ class Scraper(object):
                 f.write(lists[0])
         if lists[2] == "img":
             if '%s.jpg' % lists[1] in os.listdir():
-                return "done"
+                return True
             with open('%s.jpg'%str(lists[1]),'wb') as f:
                 f.write(requests.get(lists[0] ,stream=True).content)
             
         elif lists[2] == "vid":
             if '%s.mp4' % lists[1] in os.listdir():
-                return "done"
+                return True
             with open('%s.mp4'%str(lists[1]),'wb') as f:
                 for chunk in requests.get(lists[0] ,stream=True).iter_content(chunk_size=1024): 
                     if chunk:
                         f.write(chunk)
         self.pbarj.update()
-        return "done"
+        return True
 
     def getImages(self):
         self.imagelist = []
@@ -166,109 +170,75 @@ class Scraper(object):
             num +=5
             z = self.session.get(self.mediaurl,params={"size":100,"page":num},headers=constants.media).json()["media"]
             count = len(z)
-        return "done"
+        return True
 
     def download_img_normal(self, lists):
         if lists[2] is False:
             if '%s.jpg' % lists[1] in os.listdir():
-                return "done"
+                return True
             with open('%s.jpg'%str(lists[1]),'wb') as f:
                 f.write(requests.get(lists[0] ,stream=True).content)
         else:
             if '%s.mp4' % lists[1] in os.listdir():
-                return "done"
-            with open('%s.mp4'%str(lists[1]),'wb') as f:
-                for chunk in requests.get(lists[0] ,stream=True).iter_content(chunk_size=1024): 
-                    if chunk:
-                        f.write(chunk)
-        return "done"
+                return True
+                with open('%s.mp4'%str(lists[1]),'wb') as f:
+                    for chunk in requests.get(lists[0] ,stream=True).iter_content(chunk_size=1024): 
+                        if chunk:
+                            f.write(chunk)
+        return True
 
-    def doit(self):
+    def run_all(self):
+        """
+        This runs all of the operations on a user's profile,
+        it gets the images and the journal entries
+        :params: none
+        :return: none
+        """
         self.getImages()
         self.getJournal()
 
+def parser():
+    """Returns the parser arguments
+    :params: none
+    :return: parser.parse_args() object
+    """
+    parser = argparse.ArgumentParser(
+    description="Scrapes a specified users VSCO Account")
+    parser.add_argument('-u', '--username', type=str, default=None, help='VSCO user to scrape')
+    parser.add_argument('-s', '--siteId', action="store_true", help='Grabs VSCO siteID for user')
+    parser.add_argument('-i', '--getImages', action="store_true", help='Get the pictures of the user')
+    parser.add_argument('-j', '--getJournal', action="store_true", help='Get the journal images of the user')
+    parser.add_argument('-m', '--multiple', nargs="+", type=str, default=None, help='Scrape multiple users')
+    parser.add_argument('-a', '--all', action="store_true", help='Scrape multiple users journals and images')
+    return parser.parse_args()
             
 def main():
-    parser = argparse.ArgumentParser(
-    description="Scrapes a specified users VSCO, currently only supports one user at a time")
-    parser.add_argument('username', help='VSCO user to scrape')
-    parser.add_argument('-s','--siteId',action="store_true", help='Grabs VSCO siteID for user')
-    parser.add_argument('-i','--getImages',action="store_true", help='Get the pictures of the user')
-    parser.add_argument('-j','--getJournal',action="store_true", help='Get the journal images of the user')
-    parser.add_argument('-m','--multiple',action="store_true", help='Scrape multiple users')
-    parser.add_argument('-mj','--multipleJournal',action="store_true", help='Scrape multiple users journal')
-    parser.add_argument('-a','--all',action="store_true", help='Scrape multiple users journals and images')
-    args = parser.parse_args()
+    # Get the Namespace object returned from the parser function
+    args = parser()
+    # Make sure that a username was specified, we cannot require that argument in the parser because
+    # that argument isn't nessisarily required for all situations when using this tool
+    if args.username != None:
+        if args.siteId:
+            scraper = Scraper(args.username)
+            print(scraper.newSiteId())
 
+        if args.getImages:
+            scraper = Scraper(args.username)
+            scraper.getImages()
+
+        if args.getJournal:
+            scraper = Scraper(args.username)
+            scraper.getJournal()
+    elif args.multiple != None:
+        # For every user in the list, run both scrapes on it
+        cwd = os.getcwd()
+        for user in args.multiple:
+            Scraper(user).run_all()
+            os.chdir(cwd)
+    else:
+        print("Error, use -h for help")
+        return False
     
-    
-
-    if args.siteId:
-        scraper = Scraper(args.username)
-        print(scraper.newSiteId())
-
-    if args.getImages:
-        scraper = Scraper(args.username)
-        scraper.getImages()
-
-    if args.getJournal:
-        scraper = Scraper(args.username)
-        scraper.getJournal()
-
-    if args.multiple:
-        y = []
-        vsco = os.getcwd()
-        with open(args.username,'r') as f:
-            for x in f:
-                y.append(x.replace("\n", ""))
-        for z in y:
-            try:
-                os.chdir(vsco)
-                Scraper(z).getImages()
-                print()
-            except:
-                print("%s crashed" % z)
-                pass
-
-    if args.multipleJournal:
-        y = []
-        vsco = os.getcwd()
-        with open(args.username,'r') as f:
-            for x in f:
-                y.append(x.replace("\n", ""))
-        for z in y:
-            try:
-                os.chdir(vsco)
-                Scraper(z).getJournal()
-                print()
-            except:
-                print("%s crashed" % z)
-                pass
-
-    if args.all:
-        y = []
-        vsco = os.getcwd()
-        with open(args.username,'r') as f:
-            for x in f:
-                y.append(x.replace("\n", ""))
-        for z in y:
-            try:
-                os.chdir(vsco)
-                Scraper(z).doit()
-                print()
-            except:
-                print("%s crashed" % z)
-                pass
-    
-
-    
-
-
 
 if __name__ == '__main__':
     main()
-
-
-
-
-        
