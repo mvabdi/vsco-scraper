@@ -31,12 +31,66 @@ class Scraper(object):
         base = "http://vsco.co/"
         res = self.session.get("http://vsco.co/ajxp/%s/2.0/sites?subdomain=%s" % (self.uid,self.username))
         self.siteid = res.json()["sites"][0]["id"]
+        self.sitecollectionid = res.json()["sites"][0]["site_collection_id"]
         return self.siteid
 
     def buildJSON(self):
         self.mediaurl = "http://vsco.co/ajxp/%s/2.0/medias?site_id=%s" % (self.uid,self.siteid)
         self.journalurl = "http://vsco.co/ajxp/%s/2.0/articles?site_id=%s" % (self.uid,self.siteid)
+        self.collectionurl = "http://vsco.co/ajxp/%s/2.0/collections/%s/medias?" % (self.uid,self.sitecollectionid)
         return self.mediaurl
+
+    def getCollection(self):
+        self.imagelist = []
+        self.getCollectionList()  
+        path = os.path.join(os.getcwd(), "collection")
+        if not os.path.exists(path):
+            os.makedirs(path)
+        os.chdir(path) 
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            future_to_url = {executor.submit(self.download_img_normal,lists): lists for lists in self.imagelist}
+            for future in tqdm(concurrent.futures.as_completed(future_to_url), total=len(self.imagelist), desc='Downloading collection posts of %s'%self.username, unit=' posts'):
+                liste = future_to_url[future]
+                try:
+                    data=future.result()
+                except Exception as exc:
+                    print('%r crashed %s' % (liste,exc))
+        os.chdir('..')
+
+
+    def getCollectionList(self):
+        self.pbar = tqdm(desc='Finding new collection posts of %s' %self.username, unit=' posts')
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            future_to_url = {executor.submit(self.makeCollectionList,num): num for num in range(5)}
+            for future in concurrent.futures.as_completed(future_to_url):
+                num=future_to_url[future]
+                try:
+                    data=future.result()
+                except Exception as exc:
+                    print('%r crashed %s' % (num,exc))
+        self.pbar.close()
+
+        
+    def makeCollectionList(self, num):
+        num +=1
+        z = self.session.get(self.collectionurl,params={"size":100,"page":num},headers=constants.media).json()['medias']
+
+        count = len(z)
+        while count>0:
+            for url in z:
+                if '%s.jpg' % str(url["upload_date"])[:-3] in os.listdir() or '%s.mp4' % str(url["upload_date"])[:-3] in os.listdir():
+                    continue
+                if url['is_video'] is True:
+                    self.imagelist.append(["http://%s"% url["video_url"],str(url["upload_date"])[:-3],True])
+                    self.pbar.update()
+                else:
+                    self.imagelist.append(["http://%s"% url["responsive_url"],str(url["upload_date"])[:-3],False])
+                    self.pbar.update()
+            num +=5
+            z = self.session.get(self.collectionurl,params={"size":100,"page":num},headers=constants.media).json()["medias"]
+            count = len(z)
+        return "done"
+
 
     def getJournal(self):
         self.getJournalList()
@@ -185,6 +239,7 @@ class Scraper(object):
 
     def doit(self):
         self.getImages()
+        self.getCollection()
         self.getJournal()
 
             
@@ -195,9 +250,11 @@ def main():
     parser.add_argument('-s','--siteId',action="store_true", help='Grabs VSCO siteID for user')
     parser.add_argument('-i','--getImages',action="store_true", help='Get the pictures of the user')
     parser.add_argument('-j','--getJournal',action="store_true", help='Get the journal images of the user')
+    parser.add_argument('-c','--getCollection',action="store_true", help='Get the collection images of the user')
     parser.add_argument('-m','--multiple',action="store_true", help='Scrape multiple users')
     parser.add_argument('-mj','--multipleJournal',action="store_true", help='Scrape multiple users journal')
-    parser.add_argument('-a','--all',action="store_true", help='Scrape multiple users journals and images')
+    parser.add_argument('-mc','--multipleCollection',action="store_true", help='Scrape multiple users collection')
+    parser.add_argument('-a','--all',action="store_true", help='Scrape multiple users journals, collections and images')
     args = parser.parse_args()
 
     
@@ -214,6 +271,10 @@ def main():
     if args.getJournal:
         scraper = Scraper(args.username)
         scraper.getJournal()
+
+    if args.getCollection:
+        scraper = Scraper(args.username)
+        scraper.getCollection()
 
     if args.multiple:
         y = []
@@ -240,6 +301,21 @@ def main():
             try:
                 os.chdir(vsco)
                 Scraper(z).getJournal()
+                print()
+            except:
+                print("%s crashed" % z)
+                pass
+
+    if args.multipleCollection:
+        y = []
+        vsco = os.getcwd()
+        with open(args.username,'r') as f:
+            for x in f:
+                y.append(x.replace("\n", ""))
+        for z in y:
+            try:
+                os.chdir(vsco)
+                Scraper(z).getCollection()
                 print()
             except:
                 print("%s crashed" % z)
