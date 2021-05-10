@@ -39,17 +39,23 @@ To scrape a user's journal on VSCO:
 ```
 *Journal Images are downloaded into the* `<current directory>/<username>/journal/<journalname>`
 
+To scrape a user's collection on VSCO:
+```
+ $ vsco-scraper <username> --getCollection
+```
+*Collection Images are downloaded into the* `<current directory>/<username>/collection>`
+
 To scrape multiple VSCOs:
 ```
  $ vsco-scraper <filename-of-text-file> --multiple
 ```
 *The scraper will read a text file, one username per line
 
-To scrape multiple VSCOs and journals:
+To scrape multiple VSCOs images, journals and collections:
 ```
  $ vsco-scraper <filename-of-text-file> --all
 ```
-*Same as above one username per line, but will also download journals if it finds them
+*Same as above one username per line, but will also download journals and collection if it finds them
 
 
 ## Options
@@ -57,10 +63,12 @@ To scrape multiple VSCOs and journals:
 Option | Secondary Options | Description
 ------ | ------------- | -----------
 --getImages | -i | Grabs all of the user's images
---getJournal | -j | Grab's all of the images in the user's journals, then seperates into seperate folders
---multiple | -m | Grab's multple user's images
+--getJournal | -j | Grabs all of the images in the user's journals, then separates into separate folders
+--getCollection | -c | Grabs all of the images in the user's collection
+--multiple | -m | Grab's multiple user's images
 --multipleJournal | -mj | Grab's multiple user's journals
---all | -a | Scrape multiple users journals and images, will download journal if they have one
+--multipleCollection | -mc | Grab's multiple user's collections
+--all | -a | Scrape multiple users journals, collections and images, will download journal and collection if they have one
 
 
 ## Author
