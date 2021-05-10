@@ -42,11 +42,11 @@ class Scraper(object):
 
     def getCollection(self):
         self.imagelist = []
-        self.getCollectionList()  
         path = os.path.join(os.getcwd(), "collection")
         if not os.path.exists(path):
             os.makedirs(path)
         os.chdir(path) 
+        self.getCollectionList()  
         with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
             future_to_url = {executor.submit(self.download_img_normal,lists): lists for lists in self.imagelist}
             for future in tqdm(concurrent.futures.as_completed(future_to_url), total=len(self.imagelist), desc='Downloading collection posts of %s'%self.username, unit=' posts'):
