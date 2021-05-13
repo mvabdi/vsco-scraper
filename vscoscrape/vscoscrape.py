@@ -225,7 +225,7 @@ class Scraper(object):
                 for chunk in requests.get(lists[0] ,stream=True).iter_content(chunk_size=1024): 
                     if chunk:
                         f.write(chunk)
-        self.pbarj.update()
+        self.progbarj.update()
         return True
 
     def getImages(self):
