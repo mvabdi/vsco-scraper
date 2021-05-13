@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="vsco-scraper",
-    version='0.51',
+    version='0.52',
     description='Allows for a user to scrape users VSCOs',
     author='Mustafa Abdi',
     author_email='mustafabyabdi@gmail.com',
