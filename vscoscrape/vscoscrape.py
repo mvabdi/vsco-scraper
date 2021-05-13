@@ -75,6 +75,13 @@ class Scraper(object):
 
 
     def getCollectionList(self):
+        """
+        Starts setting up to download the collection
+
+        Does magical stuff with the concurrent future
+        :params: none
+        :return: none
+        """
         self.pbar = tqdm(desc='Finding new collection posts of %s' %self.username, unit=' posts')
         with ThreadPoolExecutor(max_workers=5) as executor:
             future_to_url = {executor.submit(self.makeCollectionList,num): num for num in range(5)}
@@ -88,6 +95,11 @@ class Scraper(object):
 
         
     def makeCollectionList(self, num):
+        """
+        Determines what file type a media item is, then appends the correct url
+        :params: num - this does some magic, no idea why it works or why I did it
+        :return: a boolean on whether the list was successfully made
+        """
         num +=1
         z = self.session.get(self.collectionurl,params={"size":100,"page":num},headers=constants.media).json()['medias']
 
