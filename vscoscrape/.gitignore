@@ -4,6 +4,5 @@
 **/dist
 /dist
 .git
-/test-vsco
 .DS_Store
 *__pycache__

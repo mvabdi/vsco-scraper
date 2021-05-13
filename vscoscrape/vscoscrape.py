@@ -1,25 +1,27 @@
-import requests
-from tqdm import tqdm
-from . import constants
-import time
-import os
-from concurrent.futures import ThreadPoolExecutor
-import concurrent.futures
-import random
+#!/usr/bin/env python3
 import argparse
+import concurrent.futures
+import os
+import random
+import time
+from concurrent.futures import ThreadPoolExecutor
 
+import requests
 
+from tqdm import tqdm
 
+from . import constants
 
 
 class Scraper(object):
 
     def __init__(self, username):
       self.username = username
-      self.session = requests.Session() 
+      self.session = requests.Session()
       self.session.get("http://vsco.co/content/Static/userinfo?callback=jsonp_%s_0"% (str(round(time.time()*1000))),headers=constants.visituserinfo)
       self.uid = self.session.cookies.get_dict()['vs']
       path = os.path.join(os.getcwd(), self.username)
+      # If the path doesn't exist, then create it
       if not os.path.exists(path):
           os.makedirs(path)
       os.chdir(path)
@@ -28,19 +30,33 @@ class Scraper(object):
       self.totalj = 0
 
     def newSiteId(self):
-        base = "http://vsco.co/"
+        """
+        Gets the unique id used per vsco user, it can be found in the cookies
+        :params: none
+        :return: returns the site id of a user in case you were curious
+        """
         res = self.session.get("http://vsco.co/ajxp/%s/2.0/sites?subdomain=%s" % (self.uid,self.username))
         self.siteid = res.json()["sites"][0]["id"]
         self.sitecollectionid = res.json()["sites"][0]["site_collection_id"]
         return self.siteid
 
     def buildJSON(self):
+        """
+        Creates the urls used to grab json data for a user
+        :params: none
+        :return: returns the main media url by default
+        """
         self.mediaurl = "http://vsco.co/ajxp/%s/2.0/medias?site_id=%s" % (self.uid,self.siteid)
         self.journalurl = "http://vsco.co/ajxp/%s/2.0/articles?site_id=%s" % (self.uid,self.siteid)
         self.collectionurl = "http://vsco.co/ajxp/%s/2.0/collections/%s/medias?" % (self.uid,self.sitecollectionid)
         return self.mediaurl
 
     def getCollection(self):
+        """
+        Downloads the collection posts from the user
+        :params: none
+        :return: none
+        """
         self.imagelist = []
         path = os.path.join(os.getcwd(), "collection")
         if not os.path.exists(path):
@@ -59,6 +75,13 @@ class Scraper(object):
 
 
     def getCollectionList(self):
+        """
+        Starts setting up to download the collection
+
+        Does magical stuff with the concurrent future
+        :params: none
+        :return: none
+        """
         self.pbar = tqdm(desc='Finding new collection posts of %s' %self.username, unit=' posts')
         with ThreadPoolExecutor(max_workers=5) as executor:
             future_to_url = {executor.submit(self.makeCollectionList,num): num for num in range(5)}
@@ -72,6 +95,11 @@ class Scraper(object):
 
         
     def makeCollectionList(self, num):
+        """
+        Determines what file type a media item is, then appends the correct url
+        :params: num - this does some magic, no idea why it works or why I did it
+        :return: a boolean on whether the list was successfully made
+        """
         num +=1
         z = self.session.get(self.collectionurl,params={"size":100,"page":num},headers=constants.media).json()['medias']
 
@@ -89,12 +117,17 @@ class Scraper(object):
             num +=5
             z = self.session.get(self.collectionurl,params={"size":100,"page":num},headers=constants.media).json()["medias"]
             count = len(z)
-        return "done"
+        return True
 
 
     def getJournal(self):
+        """
+        Downloads the journal posts from the user
+        :params: none
+        :return: none
+        """
         self.getJournalList()
-        self.pbarj = tqdm(total=self.totalj, desc='Downloading journal posts of %s'%self.username, unit=' posts')    
+        self.progbarj = tqdm(total=self.totalj, desc='Downloading journal posts of %s'%self.username, unit=' posts')    
         for x in self.works:
             path = os.path.join(os.getcwd(), x[0])
             if not os.path.exists(path):
@@ -110,9 +143,17 @@ class Scraper(object):
                     except Exception as exc:
                         print('%r crashed %s' % (part,exc))
             os.chdir(os.path.normpath(os.getcwd() + os.sep + os.pardir))
-        self.pbarj.close()
+        self.progbarj.close()
 
     def getJournalList(self):
+        """
+        Opens initial journal data of a user and creates the journal folder
+
+        Then it does some magical bs, I made this years ago no idea how it works
+
+        :params: none
+        :return: none
+        """
         self.works = []
         self.jour_found = self.session.get(self.journalurl,params={"size":10000,"page":1},headers=constants.media).json()["articles"]
         self.pbarjlist = tqdm(desc='Finding new journal posts of %s' %self.username, unit=' posts')
@@ -133,12 +174,12 @@ class Scraper(object):
         self.pbarjlist.close()
 
     def makeListJournal(self, num, loc):
+        """
+        Makes the list of all journal entries on the users page
+        :params: num, loc
+        :return: a boolean on whether the journal media was able to be grabbed
+        """
         for item in self.jour_found[loc]["body"]:
-                #if os.path.exists(os.path.join(os.getcwd(), self.jour_found[loc]["permalink"])):
-               #     if '%s.jpg' % str(item["content"][0]["id"]) in os.listdir(os.path.join(os.getcwd(),self.jour_found[loc]["permalink"])):
-               #         continue
-               #     if '%s.mp4' % str(item["content"][0]["id"])in os.listdir(os.path.join(os.getcwd(),self.jour_found[loc]["permalink"])):
-               #         continue
             if item['type'] == "image":
                 if os.path.exists(os.path.join(os.getcwd(),self.jour_found[loc]["permalink"])):
                     if '%s.jpg' % str(item["content"][0]["id"]) in os.listdir(os.path.join(os.getcwd(),self.jour_found[loc]["permalink"])):
@@ -156,29 +197,47 @@ class Scraper(object):
                 self.works[loc].append([item["content"],"txt"])
             self.totalj +=1
             self.pbarjlist.update()
-        return "done"
+        return True
 
     def download_img_journal(self, lists):
+        """
+        Downloads the journal media in specified ways depending on the type of media
+
+        Since Journal items can be text files, images, or videos, I had to make 3 
+        different ways of downloading
+
+        :params: lists - No idea why I named it this, but it's a media item 
+        :return: a boolean on whether the journal media was able to be downloaded
+        """
         if lists[1] == "txt":
             with open("%s.txt"%str(lists[0]),'w') as f:
                 f.write(lists[0])
         if lists[2] == "img":
             if '%s.jpg' % lists[1] in os.listdir():
-                return "done"
+                return True
             with open('%s.jpg'%str(lists[1]),'wb') as f:
                 f.write(requests.get(lists[0] ,stream=True).content)
             
         elif lists[2] == "vid":
             if '%s.mp4' % lists[1] in os.listdir():
-                return "done"
+                return True
             with open('%s.mp4'%str(lists[1]),'wb') as f:
                 for chunk in requests.get(lists[0] ,stream=True).iter_content(chunk_size=1024): 
                     if chunk:
                         f.write(chunk)
-        self.pbarj.update()
-        return "done"
+        self.progbarj.update()
+        return True
 
     def getImages(self):
+        """
+        Makes a list of all media items in a page
+
+        I clearly recall straight copy pasting the concurrent futures thing from stack 
+        overflow. Still have no idea how it works
+
+        :params: none
+        :return: none
+        """
         self.imagelist = []
         self.getImageList()   
         with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
@@ -192,6 +251,12 @@ class Scraper(object):
 
 
     def getImageList(self):
+        """
+        tqdm is a great library isn't it
+
+        :params: none
+        :return: none
+        """
         self.pbar = tqdm(desc='Finding new posts of %s' %self.username, unit=' posts')
         with ThreadPoolExecutor(max_workers=5) as executor:
             future_to_url = {executor.submit(self.makeImageList,num): num for num in range(5)}
@@ -204,6 +269,15 @@ class Scraper(object):
         self.pbar.close()
 
     def makeImageList(self, num):
+        """
+        At this point I'm only doing these comments out of a general sense I should comment
+        all these functions after that one PR did it
+
+        Don't ask me how it works, frankly I'm surprised it does
+        
+        :params: num - I remember looking at this after starting to merge the prs and wondering why I did num += 5. Still couldn't tell you. 
+        :return: a boolean on whether the journal media was able to be grabbed
+        """
         num +=1
         z = self.session.get(self.mediaurl,params={"size":100,"page":num},headers=constants.media).json()["media"]
         count = len(z)
@@ -220,45 +294,67 @@ class Scraper(object):
             num +=5
             z = self.session.get(self.mediaurl,params={"size":100,"page":num},headers=constants.media).json()["media"]
             count = len(z)
-        return "done"
+        return True
 
     def download_img_normal(self, lists):
+        """
+        This function makes sense at least
+
+        The if '%s.whatever' sections are to skip downloading the file again if it's already been downloaded
+
+        At the time I wrote this, I only remember seeing that images and videos were the only things allowed
+
+        So I didn't write an if statement checking for text files, so this would just skip it I believe if it ever came up
+        and return True
+
+        :params: lists - My naming sense was beat. lists is just a media item.
+        :return: a boolean on whether the media item was downloaded successfully
+        """
         if lists[2] is False:
             if '%s.jpg' % lists[1] in os.listdir():
-                return "done"
+                return True
             with open('%s.jpg'%str(lists[1]),'wb') as f:
                 f.write(requests.get(lists[0] ,stream=True).content)
         else:
             if '%s.mp4' % lists[1] in os.listdir():
-                return "done"
+                return True
             with open('%s.mp4'%str(lists[1]),'wb') as f:
                 for chunk in requests.get(lists[0] ,stream=True).iter_content(chunk_size=1024): 
                     if chunk:
                         f.write(chunk)
-        return "done"
+        return True
 
-    def doit(self):
+    def run_all(self):
+        """
+        This runs all of the operations on a user's profile,
+        it gets the images, the collection, and the journal entries
+        :params: none
+        :return: none
+        """
         self.getImages()
         self.getCollection()
         self.getJournal()
 
-            
-def main():
+def parser():
+    """Returns the parser arguments
+    :params: none
+    :return: parser.parse_args() object
+    """
     parser = argparse.ArgumentParser(
-    description="Scrapes a specified users VSCO, currently only supports one user at a time")
-    parser.add_argument('username', help='VSCO user to scrape')
-    parser.add_argument('-s','--siteId',action="store_true", help='Grabs VSCO siteID for user')
-    parser.add_argument('-i','--getImages',action="store_true", help='Get the pictures of the user')
-    parser.add_argument('-j','--getJournal',action="store_true", help='Get the journal images of the user')
+    description="Scrapes a specified users VSCO Account")
+    parser.add_argument('username', type=str, help='VSCO user to scrape or file name to read usernames off of. Filename feature works with -m, -mc, -mj, and -a only')
+    parser.add_argument('-s', '--siteId', action="store_true", help='Grabs VSCO siteID for user')
+    parser.add_argument('-i', '--getImages', action="store_true", help='Get the pictures of the user')
+    parser.add_argument('-j', '--getJournal', action="store_true", help='Get the journal images of the user')
     parser.add_argument('-c','--getCollection',action="store_true", help='Get the collection images of the user')
-    parser.add_argument('-m','--multiple',action="store_true", help='Scrape multiple users')
+    parser.add_argument('-m', '--multiple',action="store_true", help='Scrape multiple users')
     parser.add_argument('-mj','--multipleJournal',action="store_true", help='Scrape multiple users journal')
     parser.add_argument('-mc','--multipleCollection',action="store_true", help='Scrape multiple users collection')
-    parser.add_argument('-a','--all',action="store_true", help='Scrape multiple users journals, collections and images')
-    args = parser.parse_args()
-
-    
-    
+    parser.add_argument('-a', '--all', action="store_true", help='Scrape multiple users journals and images')
+    return parser.parse_args()
+            
+def main():
+    args = parser()
 
     if args.siteId:
         scraper = Scraper(args.username)
@@ -330,21 +426,11 @@ def main():
         for z in y:
             try:
                 os.chdir(vsco)
-                Scraper(z).doit()
+                Scraper(z).run_all()
                 print()
             except:
                 print("%s crashed" % z)
                 pass
     
-
-    
-
-
-
 if __name__ == '__main__':
     main()
-
-
-
-
-        
