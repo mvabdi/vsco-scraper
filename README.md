@@ -85,7 +85,8 @@ To scrape multiple VSCOs images, journals and collections:
 ## Contributors
 
 - **Hadjer Benzaamia** - _Collection PR_ - [bz-hadjer](https://github.com/bz-hadjer)
-- **sc1341** - _Pull Request_ - [sc1341](https://github.com/sc1341)
+- **sc1341** - _PR_ - [sc1341](https://github.com/sc1341)
+- **lazytownfan** - _PR_ - [lazytownfan](https://github.com/lazytownfan)
 
 ## License
 
