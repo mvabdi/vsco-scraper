@@ -68,15 +68,16 @@ To scrape multiple VSCOs images, journals and collections:
 
 ## Options
 
-| Option               | Secondary Options | Description                                                                                                   |
-| -------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------- |
-| --getImages          | -i                | Grabs all of the user's images                                                                                |
-| --getJournal         | -j                | Grabs all of the images in the user's journals, then separates into separate folders                          |
-| --getCollection      | -c                | Grabs all of the images in the user's collection                                                              |
-| --multiple           | -m                | Grabs multiple users' images                                                                                  |
-| --multipleJournal    | -mj               | Grabs multiple users' journals                                                                                |
-| --multipleCollection | -mc               | Grabs multiple users' collections                                                                             |
-| --all                | -a                | Scrape multiple users journals, collections and images, will download journal and collection if they have one |
+| Option               | Secondary Options | Description                                                                                                              |
+| -------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| --getImages          | -i                | Grabs all of the user's images                                                                                           |
+| --getJournal         | -j                | Grabs all of the images in the user's journals, then separates into separate folders                                     |
+| --getCollection      | -c                | Grabs all of the images in the user's collection                                                                         |
+| --multiple           | -m                | Grabs multiple users' images                                                                                             |
+| --multipleJournal    | -mj               | Grabs multiple users' journals                                                                                           |
+| --multipleCollection | -mc               | Grabs multiple users' collections                                                                                        |
+| --all                | -a                | Scrape multiple users journals, collections and images, will download journal and collection if they have one            |
+| --cacheHit           | -ch               | This feature allows you to download images from an account even when the username changes by storing unique ids per user |
 
 ## Author
 
