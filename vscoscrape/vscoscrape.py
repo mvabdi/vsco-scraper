@@ -2,7 +2,7 @@
 import argparse
 import concurrent.futures
 import os
-import random
+import json
 import time
 from concurrent.futures import ThreadPoolExecutor
 
@@ -38,11 +38,20 @@ class Scraper(object):
         :params: none
         :return: returns the site id of a user in case you were curious
         """
-        res = self.session.get(
-            "http://vsco.co/ajxp/%s/2.0/sites?subdomain=%s" % (self.uid, self.username)
-        )
-        self.siteid = res.json()["sites"][0]["id"]
-        self.sitecollectionid = res.json()["sites"][0]["site_collection_id"]
+        global cache
+
+        if cache is None or self.username not in cache:
+            res = self.session.get(
+                "http://vsco.co/ajxp/%s/2.0/sites?subdomain=%s"
+                % (self.uid, self.username)
+            )
+            self.siteid = res.json()["sites"][0]["id"]
+            self.sitecollectionid = res.json()["sites"][0]["site_collection_id"]
+            if cache is not None:
+                cache[self.username] = [self.siteid, self.sitecollectionid]
+        else:
+            self.siteid = cache[self.username][0]
+            self.sitecollectionid = cache[self.username][1]
         return self.siteid
 
     def buildJSON(self):
@@ -505,31 +514,72 @@ def parser():
         action="store_true",
         help="Scrape multiple users journals and images",
     )
+    parser.add_argument(
+        "-ch",
+        "--cacheHit",
+        action="store_true",
+        help="Caches site id in case of a username switch",
+    )
     return parser.parse_args()
 
 
+def openCache(file):
+    """
+    This function is meant to open a cache file, and get a previously used cache of usernames
+    :params: file the filename used to store the cache
+    """
+    global cache
+
+    with open(file, "a+", encoding="utf-8") as f:
+        try:
+            f.seek(0)
+            cache = json.load(f)
+        except Exception:
+            cache = {}
+
+
+def updateCache(file):
+    """
+    This function is meant to update the current used cache file with any new information
+    :params: file the filename used to store the cache
+    """
+    global cache
+
+    with open(file, "w", encoding="utf-8") as f:
+        json.dump(cache, f, ensure_ascii=False, indent=4)
+
+
 def main():
+    global cache
     args = parser()
+    vsco = os.getcwd()
+    cache = None
+
+    if args.cacheHit:
+        openCache(args.username + "_cache_store")
 
     if args.siteId:
         scraper = Scraper(args.username)
         print(scraper.newSiteId())
+        os.chdir(vsco)
 
     if args.getImages:
         scraper = Scraper(args.username)
         scraper.getImages()
+        os.chdir(vsco)
 
     if args.getJournal:
         scraper = Scraper(args.username)
         scraper.getJournal()
+        os.chdir(vsco)
 
     if args.getCollection:
         scraper = Scraper(args.username)
         scraper.getCollection()
+        os.chdir(vsco)
 
     if args.multiple:
         y = []
-        vsco = os.getcwd()
         with open(args.username, "r") as f:
             for x in f:
                 y.append(x.replace("\n", ""))
@@ -541,10 +591,10 @@ def main():
             except:
                 print("%s crashed" % z)
                 pass
+        os.chdir(vsco)
 
     if args.multipleJournal:
         y = []
-        vsco = os.getcwd()
         with open(args.username, "r") as f:
             for x in f:
                 y.append(x.replace("\n", ""))
@@ -556,10 +606,10 @@ def main():
             except:
                 print("%s crashed" % z)
                 pass
+        os.chdir(vsco)
 
     if args.multipleCollection:
         y = []
-        vsco = os.getcwd()
         with open(args.username, "r") as f:
             for x in f:
                 y.append(x.replace("\n", ""))
@@ -571,10 +621,10 @@ def main():
             except:
                 print("%s crashed" % z)
                 pass
+        os.chdir(vsco)
 
     if args.all:
         y = []
-        vsco = os.getcwd()
         with open(args.username, "r") as f:
             for x in f:
                 y.append(x.replace("\n", ""))
@@ -586,6 +636,10 @@ def main():
             except:
                 print("%s crashed" % z)
                 pass
+        os.chdir(vsco)
+
+    if args.cacheHit:
+        updateCache(args.username + "_cache_store")
 
 
 if __name__ == "__main__":
