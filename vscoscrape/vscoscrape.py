@@ -5,7 +5,7 @@ import os
 import json
 import time
 from concurrent.futures import ThreadPoolExecutor
-
+from datetime import date
 import requests
 
 from tqdm import tqdm
@@ -39,6 +39,14 @@ class Scraper(object):
         :return: returns the site id of a user in case you were curious
         """
         global cache
+        global latestCache
+
+        if latestCache is not None:
+            if self.username not in latestCache:
+                latestCache[self.username] = {}
+                latestCache[self.username]["images"] = {}
+                latestCache[self.username]["collection"] = {}
+                latestCache[self.username]["journal"] = {}
 
         if cache is None or self.username not in cache:
             res = self.session.get(
@@ -133,6 +141,7 @@ class Scraper(object):
         :params: num - this does some magic, no idea why it works or why I did it
         :return: a boolean on whether the list was successfully made
         """
+        global latestCache
         num += 1
         z = self.session.get(
             self.collectionurl,
@@ -143,6 +152,16 @@ class Scraper(object):
         count = len(z)
         while count > 0:
             for url in z:
+                if latestCache is not None:
+                    if (
+                        str(url["upload_date"])[:-3]
+                        in latestCache[self.username]["collection"]
+                    ):
+                        continue
+                    else:
+                        latestCache[self.username]["collection"][
+                            str(url["upload_date"])[:-3]
+                        ] = date.today().strftime("%m-%d-%Y")
                 if (
                     "%s.jpg" % str(url["upload_date"])[:-3] in os.listdir()
                     or "%s.mp4" % str(url["upload_date"])[:-3] in os.listdir()
@@ -247,7 +266,30 @@ class Scraper(object):
         :params: num, loc
         :return: a boolean on whether the journal media was able to be grabbed
         """
+        global latestCache
         for item in self.jour_found[loc]["body"]:
+            if latestCache is not None:
+                if item["type"] == "text":
+                    if (
+                        "%s.txt" % str(item["content"])
+                        in latestCache[self.username]["journal"]
+                    ):
+                        continue
+                    else:
+                        latestCache[self.username]["images"][
+                            "%s.txt" % str(item["content"])
+                        ] = date.today().strftime("%m-%d-%Y")
+                else:
+                    if (
+                        str(item["content"][0]["id"])
+                        in latestCache[self.username]["journal"]
+                    ):
+                        continue
+                    else:
+                        latestCache[self.username]["journal"][
+                            str(item["content"][0]["id"])
+                        ] = date.today().strftime("%m-%d-%Y")
+
             if item["type"] == "image":
                 if os.path.exists(
                     os.path.join(os.getcwd(), self.jour_found[loc]["permalink"])
@@ -381,6 +423,7 @@ class Scraper(object):
         :params: num - I remember looking at this after starting to merge the prs and wondering why I did num += 5. Still couldn't tell you.
         :return: a boolean on whether the journal media was able to be grabbed
         """
+        global latestCache
         num += 1
         z = self.session.get(
             self.mediaurl, params={"size": 100, "page": num}, headers=constants.media
@@ -388,6 +431,16 @@ class Scraper(object):
         count = len(z)
         while count > 0:
             for url in z:
+                if latestCache is not None:
+                    if (
+                        str(url["upload_date"])[:-3]
+                        in latestCache[self.username]["images"]
+                    ):
+                        continue
+                    else:
+                        latestCache[self.username]["images"][
+                            str(url["upload_date"])[:-3]
+                        ] = date.today().strftime("%m-%d-%Y")
                 if (
                     "%s.jpg" % str(url["upload_date"])[:-3] in os.listdir()
                     or "%s.mp4" % str(url["upload_date"])[:-3] in os.listdir()
@@ -520,6 +573,12 @@ def parser():
         action="store_true",
         help="Caches site id in case of a username switch",
     )
+    parser.add_argument(
+        "-l",
+        "--latest",
+        action="store_true",
+        help="Only downloades media one time, and makes sure to cache the media",
+    )
     return parser.parse_args()
 
 
@@ -549,11 +608,41 @@ def updateCache(file):
         json.dump(cache, f, ensure_ascii=False, indent=4)
 
 
+def openLatestCache(file):
+    """
+    This function is meant to open a cache for previously downloaded media
+    :params: file the filename used to store the cache
+    """
+    global latestCache
+
+    with open(file, "a+", encoding="utf-8") as f:
+        try:
+            f.seek(0)
+            latestCache = json.load(f)
+        except Exception:
+            latestCache = {}
+
+
+def updateLatestCache(file):
+    """
+    This function will update the latest cache with more information
+    :params: file the filename used to store the cache
+    """
+    global latestCache
+    with open(file, "w", encoding="utf-8") as f:
+        json.dump(latestCache, f, ensure_ascii=False, indent=4)
+
+
 def main():
     global cache
+    global latestCache
     args = parser()
     vsco = os.getcwd()
     cache = None
+    latestCache = None
+
+    if args.latest:
+        openLatestCache(args.username + "_latest_cache_store")
 
     if args.cacheHit:
         openCache(args.username + "_cache_store")
@@ -640,6 +729,9 @@ def main():
 
     if args.cacheHit:
         updateCache(args.username + "_cache_store")
+
+    if args.latest:
+        updateLatestCache(args.username + "_latest_cache_store")
 
 
 if __name__ == "__main__":
