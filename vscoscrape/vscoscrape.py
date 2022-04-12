@@ -47,6 +47,10 @@ class Scraper(object):
                 latestCache[self.username]["images"] = {}
                 latestCache[self.username]["collection"] = {}
                 latestCache[self.username]["journal"] = {}
+                latestCache[self.username]["profile"] = {}
+
+            elif "profile" not in latestCache[self.username]:
+                latestCache[self.username]["profile"] = {}
 
         if cache is None or self.username not in cache:
             res = self.session.get(
@@ -80,7 +84,81 @@ class Scraper(object):
             self.uid,
             self.sitecollectionid,
         )
+        self.profileurl = "http://vsco.co/ajxp/%s/2.0/sites/%s" % (self.uid, self.siteid)
+        
         return self.mediaurl
+
+    def getProfile(self):
+        """
+        Downloads the profile pictures for the user
+        :params: none
+        :return: none
+        """
+        self.imagelist = []
+        path = os.path.join(os.getcwd(), "profile")
+        if not os.path.exists(path):
+            os.makedirs(path)
+        os.chdir(path)
+        
+        self.pbar = tqdm(
+            desc="Finding if a new profile picture exists from %s" % self.username, unit=" post"
+        )
+
+        self.makeProfileList()
+
+        self.pbar.close()
+
+        self.pbar = tqdm(
+                total=len(self.imagelist),
+                desc="Downloading a new profile picture from %s" % self.username,
+                unit=" post",
+            )
+        for lists in self.imagelist:
+          try:
+            self.download_img_normal(lists)
+          except Exception as exc:
+            print("%s crached %s" %(self.username, exc))
+          self.pbar.update()
+        self.pbar.close()
+        os.chdir("..")
+        
+    def makeProfileList(self):
+        """
+        Creates a list holding data on the profile picture 
+        :params: none
+        :return: a boolean on whether the list was successfully made
+        """
+        global latestCache
+        url = self.session.get(
+            self.profileurl
+        ).json()["site"]
+
+        if latestCache is not None:
+            if (
+                url["profile_image_id"]
+                in latestCache[self.username]["profile"]
+            ):
+                return True
+            else:
+                latestCache[self.username]["profile"][
+                    url["profile_image_id"]
+                ] = date.today().strftime("%m-%d-%Y")
+        if (
+            "%s.jpg" % url["profile_image_id"] in os.listdir()
+        ):
+            return True
+
+        self.imagelist.append(
+            [
+                "http://%s" % url["responsive_url"],
+                url["profile_image_id"],
+                False,
+            ]
+        )
+
+        self.pbar.update()
+      
+        return True
 
     def getCollection(self):
         """
@@ -102,7 +180,7 @@ class Scraper(object):
             for future in tqdm(
                 concurrent.futures.as_completed(future_to_url),
                 total=len(self.imagelist),
-                desc="Downloading collection posts of %s" % self.username,
+                desc="Downloading collection posts from %s" % self.username,
                 unit=" posts",
             ):
                 liste = future_to_url[future]
@@ -121,7 +199,7 @@ class Scraper(object):
         :return: none
         """
         self.pbar = tqdm(
-            desc="Finding new collection posts of %s" % self.username, unit=" posts"
+            desc="Finding new collection posts from %s" % self.username, unit=" posts"
         )
         with ThreadPoolExecutor(max_workers=5) as executor:
             future_to_url = {
@@ -203,7 +281,7 @@ class Scraper(object):
         self.getJournalList()
         self.progbarj = tqdm(
             total=self.totalj,
-            desc="Downloading journal posts of %s" % self.username,
+            desc="Downloading journal posts from %s" % self.username,
             unit=" posts",
         )
         for x in self.works:
@@ -239,7 +317,7 @@ class Scraper(object):
             self.journalurl, params={"size": 10000, "page": 1}, headers=constants.media
         ).json()["articles"]
         self.pbarjlist = tqdm(
-            desc="Finding new journal posts of %s" % self.username, unit=" posts"
+            desc="Finding new journal posts from %s" % self.username, unit=" posts"
         )
         for x in self.jour_found:
             self.works.append([x["permalink"]])
@@ -384,7 +462,7 @@ class Scraper(object):
             for future in tqdm(
                 concurrent.futures.as_completed(future_to_url),
                 total=len(self.imagelist),
-                desc="Downloading posts of %s" % self.username,
+                desc="Downloading posts from %s" % self.username,
                 unit=" posts",
             ):
                 liste = future_to_url[future]
@@ -400,7 +478,7 @@ class Scraper(object):
         :params: none
         :return: none
         """
-        self.pbar = tqdm(desc="Finding new posts of %s" % self.username, unit=" posts")
+        self.pbar = tqdm(desc="Finding new posts from %s" % self.username, unit=" posts")
         with ThreadPoolExecutor(max_workers=5) as executor:
             future_to_url = {
                 executor.submit(self.makeImageList, num): num for num in range(5)
@@ -514,72 +592,18 @@ class Scraper(object):
         self.getCollection()
         self.getJournal()
 
+    def run_all_profile(self):
+        """
+        This runs all of the operations on a user's profile,
+        it gets the images, the collection, journal entries, and the profile pictures
+        :params: none
+        :return: none
+        """
+        self.getImages()
+        self.getCollection()
+        self.getJournal()
+        self.getProfile()
 
-def parser():
-    """Returns the parser arguments
-    :params: none
-    :return: parser.parse_args() object
-    """
-    parser = argparse.ArgumentParser(
-        description="Scrapes a specified users VSCO Account"
-    )
-    parser.add_argument(
-        "username",
-        type=str,
-        help="VSCO user to scrape or file name to read usernames off of. Filename feature works with -m, -mc, -mj, and -a only",
-    )
-    parser.add_argument(
-        "-s", "--siteId", action="store_true", help="Grabs VSCO siteID for user"
-    )
-    parser.add_argument(
-        "-i", "--getImages", action="store_true", help="Get the pictures of the user"
-    )
-    parser.add_argument(
-        "-j",
-        "--getJournal",
-        action="store_true",
-        help="Get the journal images of the user",
-    )
-    parser.add_argument(
-        "-c",
-        "--getCollection",
-        action="store_true",
-        help="Get the collection images of the user",
-    )
-    parser.add_argument(
-        "-m", "--multiple", action="store_true", help="Scrape multiple users"
-    )
-    parser.add_argument(
-        "-mj",
-        "--multipleJournal",
-        action="store_true",
-        help="Scrape multiple users journal",
-    )
-    parser.add_argument(
-        "-mc",
-        "--multipleCollection",
-        action="store_true",
-        help="Scrape multiple users collection",
-    )
-    parser.add_argument(
-        "-a",
-        "--all",
-        action="store_true",
-        help="Scrape multiple users journals and images",
-    )
-    parser.add_argument(
-        "-ch",
-        "--cacheHit",
-        action="store_true",
-        help="Caches site id in case of a username switch",
-    )
-    parser.add_argument(
-        "-l",
-        "--latest",
-        action="store_true",
-        help="Only downloades media one time, and makes sure to cache the media",
-    )
-    return parser.parse_args()
 
 
 def openCache(file):
@@ -632,6 +656,89 @@ def updateLatestCache(file):
     with open(file, "w", encoding="utf-8") as f:
         json.dump(latestCache, f, ensure_ascii=False, indent=4)
 
+def parser():
+    """Returns the parser arguments
+    :params: none
+    :return: parser.parse_args() object
+    """
+    parser = argparse.ArgumentParser(
+        description="Scrapes a specified users VSCO Account"
+    )
+    parser.add_argument(
+        "username",
+        type=str,
+        help="VSCO user to scrape or file name to read usernames off of. Filename feature works with -m, -mc, -mj, and -a only",
+    )
+    parser.add_argument(
+        "-s", "--siteId", action="store_true", help="Grabs VSCO siteID for user"
+    )
+    parser.add_argument(
+        "-i", "--getImages", action="store_true", help="Get the pictures of the user"
+    )
+    parser.add_argument(
+        "-j",
+        "--getJournal",
+        action="store_true",
+        help="Get the journal images of the user",
+    )
+    parser.add_argument(
+        "-p",
+        "--getProfilePicture",
+        action="store_true",
+        help="Get the profile picture of the user",
+    )
+    parser.add_argument(
+        "-c",
+        "--getCollection",
+        action="store_true",
+        help="Get the collection images of the user",
+    )
+    parser.add_argument(
+        "-m", "--multiple", action="store_true", help="Scrape images from multiple users"
+    )
+    parser.add_argument(
+        "-mj",
+        "--multipleJournal",
+        action="store_true",
+        help="Scrape multiple users journal posts",
+    )
+    parser.add_argument(
+        "-mc",
+        "--multipleCollection",
+        action="store_true",
+        help="Scrape multiple users collection posts",
+    )
+    parser.add_argument(
+        "-mp",
+        "--multipleProfile",
+        action="store_true",
+        help="Scrape multiple users profile pictures",
+    )
+    parser.add_argument(
+        "-a",
+        "--all",
+        action="store_true",
+        help="Scrape multiple users images, jounals, and collections",
+    )
+    parser.add_argument(
+        "-ap",
+        "--allProfile",
+        action="store_true",
+        help="Scrape multiple users images, jounals, collections, and profile pictures",
+    )
+    parser.add_argument(
+        "-ch",
+        "--cacheHit",
+        action="store_true",
+        help="Caches site id in case of a username switch",
+    )
+    parser.add_argument(
+        "-l",
+        "--latest",
+        action="store_true",
+        help="Only downloades media one time, and makes sure to cache the media",
+    )
+    return parser.parse_args()
 
 def main():
     global cache
@@ -665,6 +772,11 @@ def main():
     if args.getCollection:
         scraper = Scraper(args.username)
         scraper.getCollection()
+        os.chdir(vsco)
+    
+    if args.getProfilePicture:
+        scraper = Scraper(args.username)
+        scraper.getProfile()
         os.chdir(vsco)
 
     if args.multiple:
@@ -711,6 +823,21 @@ def main():
                 print("%s crashed" % z)
                 pass
         os.chdir(vsco)
+    
+    if args.multipleProfile:
+        y = []
+        with open(args.username, "r") as f:
+            for x in f:
+                y.append(x.replace("\n", ""))
+        for z in y:
+            try:
+                os.chdir(vsco)
+                Scraper(z).getProfile()
+                print()
+            except:
+                print("%s crashed" % z)
+                pass
+        os.chdir(vsco)
 
     if args.all:
         y = []
@@ -721,6 +848,21 @@ def main():
             try:
                 os.chdir(vsco)
                 Scraper(z).run_all()
+                print()
+            except:
+                print("%s crashed" % z)
+                pass
+        os.chdir(vsco)
+    
+    if args.allProfile:
+        y = []
+        with open(args.username, "r") as f:
+            for x in f:
+                y.append(x.replace("\n", ""))
+        for z in y:
+            try:
+                os.chdir(vsco)
+                Scraper(z).run_all_profile()
                 print()
             except:
                 print("%s crashed" % z)

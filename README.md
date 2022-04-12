@@ -32,7 +32,7 @@ To scrape a VSCO:
  $ vsco-scraper <username> --getImages
 ```
 
-_Images are downloaded into the_ `<current directory/<username>`
+_Images are downloaded into the_ `<current directory/<username>` _folder_
 
 To scrape a user's journal on VSCO:
 
@@ -40,7 +40,7 @@ To scrape a user's journal on VSCO:
  $ vsco-scraper <username> --getJournal
 ```
 
-_Journal Images are downloaded into the_ `<current directory>/<username>/journal/<journalname>`
+_Journal Images are downloaded into the_ `<current directory>/<username>/journal/<journalname>` _folder_
 
 To scrape a user's collection on VSCO:
 
@@ -48,7 +48,15 @@ To scrape a user's collection on VSCO:
  $ vsco-scraper <username> --getCollection
 ```
 
-_Collection Images are downloaded into the_ `<current directory>/<username>/collection>`
+_Collection Images are downloaded into the_ `<current directory>/<username>/<collection>` _folder_
+
+To scrape a user's profile picture on VSCO:
+
+```
+ $ vsco-scraper <username> --getProfile
+```
+
+_Profile Pictures are downloaded into the_ `<current directory>/<username>/<profile>` _folder_
 
 To scrape multiple VSCOs:
 
@@ -73,10 +81,13 @@ To scrape multiple VSCOs images, journals and collections:
 | --getImages          | -i                | Grabs all of the user's images                                                                                                            |
 | --getJournal         | -j                | Grabs all of the images in the user's journals, then separates into separate folders                                                      |
 | --getCollection      | -c                | Grabs all of the images in the user's collection                                                                                          |
+| --getProfile         | -p                | Grabs a users profile picture                                                                                                             |
 | --multiple           | -m                | Grabs multiple users' images                                                                                                              |
 | --multipleJournal    | -mj               | Grabs multiple users' journals                                                                                                            |
 | --multipleCollection | -mc               | Grabs multiple users' collections                                                                                                         |
-| --all                | -a                | Scrape multiple users journals, collections and images, will download journal and collection if they have one                             |
+| --multipleProfile    | -mp               | Grabs multiple users' profile pictures                                                                                                    |
+| --all                | -a                | Scrape multiple users journals, collections, and images, will download only their journal and collection if they have one                 |
+| --allProfile         | -ap               | Scrape multiple users profile pictures, journals, collections, and images. This is distinct from --all as this feature was added later    |
 | --cacheHit           | -ch               | This feature allows you to download media from an account even when the username changes by storing unique ids per user                   |
 | --latest             | -l                | This allows the user to download media once per query per user, i.e if you run the same command repeatedly, it should download media once |
 

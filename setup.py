@@ -3,7 +3,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="vsco-scraper",
-    version="0.60",
+    version="0.65",
     description="Scrape a user's VSCO profile data",
     author="Mustafa Abdi",
     author_email="mustafabyabdi@gmail.com",
