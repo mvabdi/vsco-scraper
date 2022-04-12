@@ -86,7 +86,7 @@ To scrape multiple VSCOs images, journals and collections:
 | --multipleJournal    | -mj               | Grabs multiple users' journals                                                                                                            |
 | --multipleCollection | -mc               | Grabs multiple users' collections                                                                                                         |
 | --multipleProfile    | -mp               | Grabs multiple users' profile pictures                                                                                                    |
-| --all                | -a                | Scrape multiple users journals, collections, and images, will download only their journal and collection if they have one                 |
+| --all                | -a                | Scrape multiple users journals, collections, and images, will only download their journal and collection if they have one                 |
 | --allProfile         | -ap               | Scrape multiple users profile pictures, journals, collections, and images. This is distinct from --all as this feature was added later    |
 | --cacheHit           | -ch               | This feature allows you to download media from an account even when the username changes by storing unique ids per user                   |
 | --latest             | -l                | This allows the user to download media once per query per user, i.e if you run the same command repeatedly, it should download media once |
