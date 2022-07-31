@@ -718,13 +718,13 @@ def parser():
         "-a",
         "--all",
         action="store_true",
-        help="Scrape multiple users images, jounals, and collections",
+        help="Scrape multiple users images, journals, and collections",
     )
     parser.add_argument(
         "-ap",
         "--allProfile",
         action="store_true",
-        help="Scrape multiple users images, jounals, collections, and profile pictures",
+        help="Scrape multiple users images, journals, collections, and profile pictures",
     )
     parser.add_argument(
         "-ch",
@@ -736,7 +736,7 @@ def parser():
         "-l",
         "--latest",
         action="store_true",
-        help="Only downloades media one time, and makes sure to cache the media",
+        help="Only downloads media one time, and makes sure to cache the media",
     )
     return parser.parse_args()
 
