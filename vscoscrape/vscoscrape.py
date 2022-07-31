@@ -22,7 +22,6 @@ class Scraper(object):
             % (str(round(time.time() * 1000))),
             headers=constants.visituserinfo,
         )
-        self.uid = self.session.cookies.get_dict()["vs"]
         path = os.path.join(os.getcwd(), self.username)
         # If the path doesn't exist, then create it
         if not os.path.exists(path):
@@ -54,8 +53,9 @@ class Scraper(object):
 
         if cache is None or self.username not in cache:
             res = self.session.get(
-                "http://vsco.co/ajxp/%s/2.0/sites?subdomain=%s"
-                % (self.uid, self.username)
+                "http://vsco.co/api/2.0/sites?subdomain=%s"
+                % (self.username),
+                headers=constants.visituserinfo,
             )
             self.siteid = res.json()["sites"][0]["id"]
             self.sitecollectionid = res.json()["sites"][0]["site_collection_id"]
@@ -72,19 +72,16 @@ class Scraper(object):
         :params: none
         :return: returns the main media url by default
         """
-        self.mediaurl = "http://vsco.co/ajxp/%s/2.0/medias?site_id=%s" % (
-            self.uid,
+        self.mediaurl = "http://vsco.co/api/2.0/medias?site_id=%s" % (
             self.siteid,
         )
-        self.journalurl = "http://vsco.co/ajxp/%s/2.0/articles?site_id=%s" % (
-            self.uid,
+        self.journalurl = "http://vsco.co/api/2.0/articles?site_id=%s" % (
             self.siteid,
         )
-        self.collectionurl = "http://vsco.co/ajxp/%s/2.0/collections/%s/medias?" % (
-            self.uid,
+        self.collectionurl = "http://vsco.co/api/2.0/collections/%s/medias?" % (
             self.sitecollectionid,
         )
-        self.profileurl = "http://vsco.co/ajxp/%s/2.0/sites/%s" % (self.uid, self.siteid)
+        self.profileurl = "http://vsco.co/api/2.0/sites/%s" % (self.siteid)
         
         return self.mediaurl
 
@@ -131,7 +128,7 @@ class Scraper(object):
         global latestCache
         url = self.session.get(
             self.profileurl
-        ).json()["site"]
+        , headers=constants.media).json()["site"]
 
         if latestCache is not None:
             if (

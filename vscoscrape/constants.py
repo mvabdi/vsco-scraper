@@ -35,6 +35,7 @@ visitvsco = {
     "Host": "vsco.co",
     "Upgrade-Insecure-Requests": "1",
     "User-Agent": random.choice(user_agents),
+    "Authorization": "Bearer 7356455548d0a1d886db010883388d08be84d0c9",
 }
 
 visituserinfo = {
@@ -45,6 +46,7 @@ visituserinfo = {
     "Host": "vsco.co",
     "Referer": "http://vsco.co/bob/images/1",
     "User-Agent": random.choice(user_agents),
+    "Authorization": "Bearer 7356455548d0a1d886db010883388d08be84d0c9",
 }
 
 
@@ -58,4 +60,5 @@ media = {
     "User-Agent": random.choice(user_agents),
     "X-Client-Build": "1",
     "X-Client-Platform": "web",
+    "Authorization": "Bearer 7356455548d0a1d886db010883388d08be84d0c9",
 }
