@@ -100,6 +100,8 @@ To scrape multiple VSCOs images, journals and collections:
 - **Hadjer Benzaamia** - _Collection PR_ - [bz-hadjer](https://github.com/bz-hadjer)
 - **sc1341** - _PR_ - [sc1341](https://github.com/sc1341)
 - **lazytownfan** - _PR_ - [lazytownfan](https://github.com/lazytownfan)
+- **CanavarB** - _PR_ - [CanavarB](https://github.com/CanavarB)
+- **SilverMight** - _PR_ - [SilverMight](https://github.com/SilverMight)
 
 ## License
 
