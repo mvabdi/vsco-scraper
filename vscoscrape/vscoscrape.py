@@ -144,6 +144,7 @@ class Scraper(object):
                     url["profile_image_id"]
                 ] = date.today().strftime("%m-%d-%Y")
         if (
+            url["profile_image_id"] == None or
             "%s.jpg" % url["profile_image_id"] in os.listdir()
         ):
             return True
