@@ -22,12 +22,19 @@ class Scraper(object):
             % (str(round(time.time() * 1000))),
             headers=constants.visituserinfo,
         )
+        # Get the site_id for the user 
+        # if there's an issue - user not found, etc. then raise an error
+        try:
+            self.newSiteId()
+        except Exception as ex:
+            raise Exception(f"Unable to retrieve {username}.\n {ex}")
+        
         path = os.path.join(os.getcwd(), self.username)
         # If the path doesn't exist, then create it
         if not os.path.exists(path):
             os.makedirs(path)
         os.chdir(path)
-        self.newSiteId()
+        
         self.buildJSON()
         self.totalj = 0
 
@@ -57,6 +64,17 @@ class Scraper(object):
                 % (self.username),
                 headers=constants.visituserinfo,
             )
+            # VSCO will return 404 if it can't find the specified account
+            if res.status_code == 404:
+                raise Exception(f"The user {self.username} was not found.")
+            # VSCO will return 403 if you're scraping too much
+            elif res.status_code == 403:
+                raise Exception("VSCO rejected the connection. Try again later.")
+
+            # if the account has been suspended then you won't be able to download any concent
+            if res.json()["sites"][0]["status"] == "suspended":
+                raise Exception(f"This account ({self.username}) has been suspended.")
+            
             self.siteid = res.json()["sites"][0]["id"]
             self.sitecollectionid = res.json()["sites"][0]["site_collection_id"]
             if cache is not None:
@@ -165,11 +183,18 @@ class Scraper(object):
         :return: none
         """
         self.imagelist = []
+        
+        self.getCollectionList()
+        
+        # if the image list is empty then there's nothing to download - skip the rest
+        if len(self.imagelist) < 1:
+            return 
+        
         path = os.path.join(os.getcwd(), "collection")
         if not os.path.exists(path):
             os.makedirs(path)
         os.chdir(path)
-        self.getCollectionList()
+        
         with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
             future_to_url = {
                 executor.submit(self.download_img_normal, lists): lists
@@ -277,6 +302,11 @@ class Scraper(object):
         :return: none
         """
         self.getJournalList()
+        
+        # if there are no journal entries to download then skip everything else
+        if len(self.works) < 1:
+            return
+        
         self.progbarj = tqdm(
             total=self.totalj,
             desc="Downloading journal posts from %s" % self.username,
@@ -319,10 +349,12 @@ class Scraper(object):
         )
         for x in self.jour_found:
             self.works.append([x["permalink"]])
+            
         path = os.path.join(os.getcwd(), "journal")
         if not os.path.exists(path):
             os.makedirs(path)
         os.chdir(path)
+        
         with ThreadPoolExecutor(max_workers=5) as executor:
             future_to_url = {
                 executor.submit(self.makeListJournal, len(self.jour_found), val): val
